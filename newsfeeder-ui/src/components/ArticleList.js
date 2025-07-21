@@ -1,16 +1,32 @@
 import React from 'react';
 
-const ArticleList = ({ topic, articles, activeFilters }) => {
+const ArticleList = ({ topic, articles, activeFilters, activeSourceFilters, getSourceName }) => {
   const filteredArticles = articles.filter(article => {
-    if (activeFilters.size === 0) {
-      return false; // No filters active means no articles shown
-    }
+    // Check keyword filters
+    const keywordMatch = activeFilters.size === 0 ? false : 
+      article.matched_keywords && article.matched_keywords.some(keyword => activeFilters.has(keyword));
     
-    if (!article.matched_keywords || article.matched_keywords.length === 0) {
+    // Check source filters
+    const sourceMatch = activeSourceFilters.size === 0 ? false :
+      article.from_feed && activeSourceFilters.has(article.from_feed);
+    
+    // If no filters are active, show nothing
+    if (activeFilters.size === 0 && activeSourceFilters.size === 0) {
       return false;
     }
     
-    return article.matched_keywords.some(keyword => activeFilters.has(keyword));
+    // If only keyword filters are active, use keyword match
+    if (activeFilters.size > 0 && activeSourceFilters.size === 0) {
+      return keywordMatch;
+    }
+    
+    // If only source filters are active, use source match
+    if (activeFilters.size === 0 && activeSourceFilters.size > 0) {
+      return sourceMatch;
+    }
+    
+    // If both filters are active, require both to match (AND logic)
+    return keywordMatch && sourceMatch;
   });
 
   const ExternalLinkIcon = () => (
@@ -19,13 +35,13 @@ const ArticleList = ({ topic, articles, activeFilters }) => {
     </svg>
   );
 
-  if (activeFilters.size === 0) {
+  if (activeFilters.size === 0 && activeSourceFilters.size === 0) {
     return (
       <div className="bg-white rounded-lg shadow-md p-12">
         <div className="text-center">
           <div className="text-blue-400 text-6xl mb-4">🔍</div>
-          <p className="text-gray-600 text-lg font-medium mb-2">Select one or more keyword filters to see articles</p>
-          <p className="text-gray-500">Use the checkboxes above to choose topics of interest</p>
+          <p className="text-gray-600 text-lg font-medium mb-2">Select filters to see articles</p>
+          <p className="text-gray-500">Choose keywords (blue) or sources (green) from the filters above</p>
         </div>
       </div>
     );
@@ -66,10 +82,10 @@ const ArticleList = ({ topic, articles, activeFilters }) => {
               </a>
             </h3>
             
-            {article.matched_keywords && article.matched_keywords.length > 0 && (
+            {(article.matched_keywords && article.matched_keywords.length > 0) || article.from_feed ? (
               <div className="mb-3">
                 <div className="flex flex-wrap gap-1">
-                  {article.matched_keywords.map(keyword => (
+                  {article.matched_keywords && article.matched_keywords.map(keyword => (
                     <span 
                       key={keyword}
                       className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full"
@@ -77,13 +93,27 @@ const ArticleList = ({ topic, articles, activeFilters }) => {
                       {keyword}
                     </span>
                   ))}
+                  {article.from_feed && (
+                    <span className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full">
+                      📰 {getSourceName ? getSourceName(article.from_feed) : 'Source'}
+                    </span>
+                  )}
                 </div>
               </div>
-            )}
+            ) : null}
             
-            <p className="text-gray-700 leading-relaxed mb-3">
-              {article.summary || 'No summary available'}
-            </p>
+            <div className="text-gray-700 leading-relaxed mb-3">
+              {article.is_html_summary && article.summary_html ? (
+                <div dangerouslySetInnerHTML={{__html: article.summary_html}} />
+              ) : (
+                <p>{article.summary || 'No summary available'}</p>
+              )}
+              {article.has_llm_summary && (
+                <div className="mt-2 text-xs text-blue-600 italic">
+                  ✨ AI-generated concise summary
+                </div>
+              )}
+            </div>
             
             <div className="flex justify-between items-center text-sm text-gray-500">
               <span>📅 {article.published || 'Date not available'}</span>
@@ -93,7 +123,7 @@ const ArticleList = ({ topic, articles, activeFilters }) => {
                 target="_blank" 
                 rel="noopener noreferrer"
               >
-                Source Feed →
+                {getSourceName ? getSourceName(article.from_feed) : 'Source Feed'} →
               </a>
             </div>
           </article>

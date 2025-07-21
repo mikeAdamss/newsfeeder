@@ -3,20 +3,22 @@ import NewsDigest from './components/NewsDigest';
 import './App.css';
 
 function App() {
-  const [newsData, setNewsData] = useState({});
+  const [topicsIndex, setTopicsIndex] = useState(null);
+  const [topicData, setTopicData] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Load topics index on mount
   useEffect(() => {
-    fetch('/matched_entries.json')
+    fetch('/topics/index.json')
       .then(response => {
         if (!response.ok) {
-          throw new Error('Failed to load news data');
+          throw new Error('Failed to load topics index');
         }
         return response.json();
       })
       .then(data => {
-        setNewsData(data);
+        setTopicsIndex(data);
         setLoading(false);
       })
       .catch(err => {
@@ -24,6 +26,35 @@ function App() {
         setLoading(false);
       });
   }, []);
+
+  // Function to load a specific topic's data
+  const loadTopicData = async (topicName) => {
+    if (topicData[topicName]) {
+      return topicData[topicName]; // Already loaded
+    }
+
+    try {
+      const filename = topicName.toLowerCase().replace(' ', '_');
+      const response = await fetch(`/topics/${filename}.json`);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to load ${topicName} data`);
+      }
+      
+      const data = await response.json();
+      
+      // Update the topicData state with the new data
+      setTopicData(prev => ({
+        ...prev,
+        [topicName]: data.articles
+      }));
+      
+      return data.articles;
+    } catch (err) {
+      console.error(`Error loading topic ${topicName}:`, err);
+      throw err;
+    }
+  };
 
   if (loading) {
     return (
@@ -43,7 +74,7 @@ function App() {
           <div className="text-6xl mb-4">❌</div>
           <p className="text-xl text-gray-600">Error: {error}</p>
           <p className="text-sm text-gray-500 mt-2">
-            Make sure matched_entries.json is in the public folder
+            Make sure topics/index.json is in the public folder
           </p>
         </div>
       </div>
@@ -52,7 +83,11 @@ function App() {
 
   return (
     <div className="App">
-      <NewsDigest newsData={newsData} />
+      <NewsDigest 
+        topicsIndex={topicsIndex}
+        topicData={topicData}
+        loadTopicData={loadTopicData}
+      />
     </div>
   );
 }

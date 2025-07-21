@@ -64,12 +64,13 @@ run-python:
 # Copy JSON data to React public folder
 copy-data:
 	@echo "📋 Copying data to React app..."
-	@if [ ! -f $(JSON_OUTPUT) ]; then \
-		echo "❌ $(JSON_OUTPUT) not found. Run 'make run-python' first."; \
+	@if [ ! -d code/topics ]; then \
+		echo "❌ code/topics directory not found. Run 'make run-python' first."; \
 		exit 1; \
 	fi
-	@cp $(JSON_OUTPUT) $(REACT_PUBLIC_DIR)/
-	@echo "✅ Data copied to $(REACT_PUBLIC_DIR)/$(JSON_OUTPUT)"
+	@mkdir -p $(REACT_PUBLIC_DIR)/topics
+	@cp -r code/topics/* $(REACT_PUBLIC_DIR)/topics/
+	@echo "✅ Topic data copied to $(REACT_PUBLIC_DIR)/topics/"
 
 # Start React development server
 run-react:
