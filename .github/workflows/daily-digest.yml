@@ -1,0 +1,92 @@
+name: Daily News Digest
+
+# Run daily at 8 AM UTC (adjust timezone as needed)
+on:
+  schedule:
+    - cron: '0 8 * * *'
+  # Allow manual triggering
+  workflow_dispatch:
+  # Run on pushes to main branch
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: write  # Allow pushing commits back to repository
+  pages: write     # Allow deploying to GitHub Pages
+  id-token: write  # Allow OIDC token for Pages deployment
+
+jobs:
+  generate-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+      with:
+        version: latest
+        
+    - name: Install Python dependencies
+      run: poetry install
+      
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: newsfeeder-ui/package-lock.json
+        
+    - name: Install Node.js dependencies
+      run: cd newsfeeder-ui && npm ci
+      
+    - name: Download LLM model
+      run: |
+        mkdir -p models
+        if [ ! -f models/phi-2.Q4_0.gguf ]; then
+          wget -O models/phi-2.Q4_0.gguf "https://huggingface.co/microsoft/phi-2-GGUF/resolve/main/phi-2.Q4_0.gguf"
+        fi
+      
+    - name: Generate news digest
+      run: poetry run python code/generate_news_digest.py
+      
+    - name: Commit updated cache database
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add code/processing_cache.db
+        if ! git diff --staged --quiet; then
+          git commit -m "Update cache database after daily digest generation [skip ci]"
+          git push
+        fi
+      
+    - name: Copy topic JSON files to React public folder
+      run: |
+        mkdir -p newsfeeder-ui/public/topics
+        cp code/topics/*.json newsfeeder-ui/public/topics/
+      
+    - name: Build React application
+      run: cd newsfeeder-ui && npm run build
+      
+    - name: Copy topic JSON files to build folder
+      run: |
+        mkdir -p newsfeeder-ui/build/topics
+        cp code/topics/*.json newsfeeder-ui/build/topics/
+      
+    - name: Setup Pages
+      uses: actions/configure-pages@v4
+      
+    - name: Upload to GitHub Pages
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: ./newsfeeder-ui/build
+        
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4
