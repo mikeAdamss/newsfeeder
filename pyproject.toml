@@ -1,23 +1,20 @@
-[project]
+[tool.poetry]
 name = "newsfeeder"
 version = "0.1.0"
 description = "Quick news summary project"
-authors = [
-    {name = "mikeAdamss"}
-]
-license = {text = "MIT"}
+authors = ["mikeAdamss"]
 readme = "README.md"
-requires-python = "^3.11"
-dependencies = [
-    "langchain (>=0.3.26,<0.4.0)",
-    "feedparser (>=6.0.11,<7.0.0)",
-    "jinja2 (>=3.1.6,<4.0.0)",
-    "langchain-community (>=0.3.27,<0.4.0)",
-    "gpt4all (>=2.8.2,<3.0.0)",
-    "huggingface-hub (>=0.33.4,<0.34.0)"
-]
+package-mode = false
 
+[tool.poetry.dependencies]
+python = "^3.11"
+langchain = ">=0.3.26,<0.4.0"
+feedparser = ">=6.0.11,<7.0.0"
+jinja2 = ">=3.1.6,<4.0.0"
+langchain-community = ">=0.3.27,<0.4.0"
+gpt4all = ">=2.8.2,<3.0.0"
+huggingface-hub = ">=0.33.4,<0.34.0"
 
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
+requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
