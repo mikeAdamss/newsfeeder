@@ -10,7 +10,7 @@ function App() {
 
   // Load topics index on mount
   useEffect(() => {
-    fetch('/topics/index.json')
+    fetch('./topics/index.json')
       .then(response => {
         if (!response.ok) {
           throw new Error('Failed to load topics index');
@@ -35,7 +35,7 @@ function App() {
 
     try {
       const filename = topicName.toLowerCase().replace(' ', '_');
-      const response = await fetch(`/topics/${filename}.json`);
+      const response = await fetch(`./topics/${filename}.json`);
       
       if (!response.ok) {
         throw new Error(`Failed to load ${topicName} data`);

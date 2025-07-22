@@ -52,12 +52,14 @@ install:
 run-python:
 	@echo "🔍 Running news scraper..."
 	@poetry run python $(PYTHON_SCRIPT)
-	@if [ -f $(JSON_OUTPUT) ]; then \
+	@if [ -d code/topics ] && [ -f code/topics/index.json ]; then \
 		echo "✅ News digest generated successfully!"; \
-		echo "   📄 JSON: $(JSON_OUTPUT)"; \
-		echo "   🌐 HTML: $(HTML_OUTPUT)"; \
+		echo "   � Topics: code/topics/"; \
+		echo "   📋 Index: code/topics/index.json"; \
+		echo "   📊 Topic files: $$(ls code/topics/*.json | wc -l) files"; \
 	else \
 		echo "❌ Failed to generate news digest"; \
+		echo "   Expected: code/topics/ directory with index.json"; \
 		exit 1; \
 	fi
 

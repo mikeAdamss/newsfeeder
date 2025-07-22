@@ -1,20 +1,71 @@
 import React from 'react';
 
-const TabNavigation = ({ topicsIndex, topicData, currentTab, activeFilters, onTabChange, loadingTopic }) => {
+const TabNavigation = ({ 
+  topicsIndex, 
+  topicData, 
+  currentTab, 
+  activeFilters, 
+  activeSourceFilters, 
+  activeDateFilter, 
+  customDateRange, 
+  onTabChange, 
+  loadingTopic 
+}) => {
+  const isWithinDateRange = (publishedDate, dateFilter, customRange) => {
+    if (!dateFilter || dateFilter === 'all') return true;
+    if (!publishedDate) return false;
+    
+    const articleDate = new Date(publishedDate);
+    const now = new Date();
+    
+    if (dateFilter === 'custom' && customRange.start && customRange.end) {
+      return articleDate >= customRange.start && articleDate <= customRange.end;
+    }
+    
+    const timeRanges = {
+      '24h': 24 * 60 * 60 * 1000,
+      '48h': 48 * 60 * 60 * 1000,
+      '7d': 7 * 24 * 60 * 60 * 1000,
+      '30d': 30 * 24 * 60 * 60 * 1000
+    };
+    
+    if (timeRanges[dateFilter]) {
+      const cutoffTime = now.getTime() - timeRanges[dateFilter];
+      return articleDate.getTime() >= cutoffTime;
+    }
+    
+    return true;
+  };
+
   const getArticleCounts = (topic) => {
     const articles = topicData[topic] || [];
-    const filters = activeFilters[topic] || new Set();
+    const keywordFilters = activeFilters[topic] || new Set();
+    const sourceFilters = activeSourceFilters[topic] || new Set();
     const totalCount = articles.length;
     
-    if (filters.size === 0) {
-      return { filtered: 0, total: totalCount }; // No filters active means no articles shown
+    // If no filters are active, no articles are shown
+    if (keywordFilters.size === 0 && sourceFilters.size === 0) {
+      return { filtered: 0, total: totalCount };
     }
     
     const filteredCount = articles.filter(article => {
-      if (!article.matched_keywords || article.matched_keywords.length === 0) {
-        return false;
+      // Check keyword filters (if any are active)
+      let keywordMatch = keywordFilters.size === 0; // If no keyword filters, pass keyword check
+      if (keywordFilters.size > 0 && article.matched_keywords && article.matched_keywords.length > 0) {
+        keywordMatch = article.matched_keywords.some(keyword => keywordFilters.has(keyword));
       }
-      return article.matched_keywords.some(keyword => filters.has(keyword));
+      
+      // Check source filters (if any are active)
+      let sourceMatch = sourceFilters.size === 0; // If no source filters, pass source check
+      if (sourceFilters.size > 0 && article.from_feed) {
+        sourceMatch = sourceFilters.has(article.from_feed);
+      }
+      
+      // Check date filter
+      const dateMatch = isWithinDateRange(article.published, activeDateFilter, customDateRange);
+      
+      // All active filter types must pass (AND logic)
+      return keywordMatch && sourceMatch && dateMatch;
     }).length;
     
     return { filtered: filteredCount, total: totalCount };
@@ -40,7 +91,19 @@ const TabNavigation = ({ topicsIndex, topicData, currentTab, activeFilters, onTa
         {topicsIndex.topics.map(topic => {
           const isLoaded = !!topicData[topic];
           const isLoading = loadingTopic === topic;
-          const { filtered, total } = isLoaded ? getArticleCounts(topic) : { filtered: 0, total: getTopicCount(topic) };
+          
+          let displayCount;
+          if (isLoading) {
+            displayCount = '⏳';
+          } else if (isLoaded) {
+            const { filtered, total } = getArticleCounts(topic);
+            // If all articles are showing (no filtering), just show the total
+            displayCount = filtered === total ? `${total}` : `${filtered}/${total}`;
+          } else {
+            // Show total count from index when not loaded yet
+            const totalCount = getTopicCount(topic);
+            displayCount = totalCount > 0 ? `${totalCount}` : '0';
+          }
           
           return (
             <button
@@ -57,7 +120,7 @@ const TabNavigation = ({ topicsIndex, topicData, currentTab, activeFilters, onTa
               <span className={`text-sm ${
                 currentTab === topic ? 'text-blue-100' : 'text-gray-500'
               }`}>
-                {isLoading ? '...' : (isLoaded && filtered === total ? total : `${filtered}/${total}`)}
+                {displayCount}
               </span>
             </button>
           );

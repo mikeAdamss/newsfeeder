@@ -60,6 +60,8 @@ const NewsDigest = ({ topicsIndex, topicData, loadTopicData }) => {
   const [allKeywordsUsed, setAllKeywordsUsed] = useState({});
   const [allSourcesUsed, setAllSourcesUsed] = useState({});
   const [activeSourceFilters, setActiveSourceFilters] = useState({});
+  const [activeDateFilter, setActiveDateFilter] = useState('all');
+  const [customDateRange, setCustomDateRange] = useState({ start: null, end: null });
   const [loadingTopic, setLoadingTopic] = useState(null);
 
   // Initialize when topicsIndex changes
@@ -112,8 +114,13 @@ const NewsDigest = ({ topicsIndex, topicData, loadTopicData }) => {
       // Update state for current topic
       setAllKeywordsUsed(prev => ({ ...prev, [currentTab]: keywordsArray }));
       setAllSourcesUsed(prev => ({ ...prev, [currentTab]: sourcesArray }));
-      setActiveFilters(prev => ({ ...prev, [currentTab]: new Set(keywordsArray) }));
-      setActiveSourceFilters(prev => ({ ...prev, [currentTab]: new Set(sourcesArray) }));
+      // Initialize with all filters selected by default
+      if (!(activeFilters[currentTab])) {
+        setActiveFilters(prev => ({ ...prev, [currentTab]: new Set(keywordsArray) }));
+      }
+      if (!(activeSourceFilters[currentTab])) {
+        setActiveSourceFilters(prev => ({ ...prev, [currentTab]: new Set(sourcesArray) }));
+      }
     }
   }, [currentTab, topicData]);
 
@@ -201,6 +208,15 @@ const NewsDigest = ({ topicsIndex, topicData, loadTopicData }) => {
     }));
   };
 
+  const handleDateFilterChange = (filterType, startDate, endDate) => {
+    setActiveDateFilter(filterType);
+    if (filterType === 'custom' && startDate && endDate) {
+      setCustomDateRange({ start: new Date(startDate), end: new Date(endDate) });
+    } else {
+      setCustomDateRange({ start: null, end: null });
+    }
+  };
+
   const getCurrentTime = () => {
     return new Date().toLocaleDateString('en-US', {
       year: 'numeric',
@@ -233,6 +249,9 @@ const NewsDigest = ({ topicsIndex, topicData, loadTopicData }) => {
           topicData={topicData}
           currentTab={currentTab}
           activeFilters={activeFilters}
+          activeSourceFilters={activeSourceFilters}
+          activeDateFilter={activeDateFilter}
+          customDateRange={customDateRange}
           onTabChange={handleTabChange}
           loadingTopic={loadingTopic}
         />
@@ -245,8 +264,11 @@ const NewsDigest = ({ topicsIndex, topicData, loadTopicData }) => {
               sources={allSourcesUsed[currentTab] || []}
               activeFilters={activeFilters[currentTab] || new Set()}
               activeSourceFilters={activeSourceFilters[currentTab] || new Set()}
+              activeDateFilter={activeDateFilter}
+              customDateRange={customDateRange}
               onFilterToggle={handleFilterToggle}
               onSourceFilterToggle={handleSourceFilterToggle}
+              onDateFilterChange={handleDateFilterChange}
               onSelectAll={handleSelectAllFilters}
               onClearAll={handleClearAllFilters}
               onSelectAllSources={handleSelectAllSources}
@@ -259,6 +281,8 @@ const NewsDigest = ({ topicsIndex, topicData, loadTopicData }) => {
               articles={topicData[currentTab] || []}
               activeFilters={activeFilters[currentTab] || new Set()}
               activeSourceFilters={activeSourceFilters[currentTab] || new Set()}
+              activeDateFilter={activeDateFilter}
+              customDateRange={customDateRange}
               getSourceName={getSourceName}
             />
           </>

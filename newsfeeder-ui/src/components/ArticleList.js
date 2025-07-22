@@ -1,32 +1,116 @@
 import React from 'react';
 
-const ArticleList = ({ topic, articles, activeFilters, activeSourceFilters, getSourceName }) => {
+// Helper function to truncate HTML content
+const truncateHtml = (html, maxLength = 800) => {
+  if (!html) return '';
+  
+  // Remove HTML tags to calculate text length
+  const textContent = html.replace(/<[^>]*>/g, '');
+  
+  if (textContent.length <= maxLength) {
+    return html;
+  }
+  
+  // If text is too long, try to find a good breaking point in the HTML
+  let truncated = '';
+  let textLength = 0;
+  let inTag = false;
+  
+  for (let i = 0; i < html.length; i++) {
+    const char = html[i];
+    
+    if (char === '<') {
+      inTag = true;
+    } else if (char === '>') {
+      inTag = false;
+    } else if (!inTag) {
+      textLength++;
+      if (textLength > maxLength) {
+        break;
+      }
+    }
+    
+    truncated += char;
+  }
+  
+  // Clean up unclosed tags and add ellipsis
+  return truncated.replace(/<[^>]*$/g, '') + '...';
+};
+
+// Efficient date filtering utility
+const createDateMatcher = (filterType, customRange) => {
+  if (!filterType || filterType === 'all') return () => true;
+  
+  const now = new Date();
+  let cutoffDate;
+  
+  switch (filterType) {
+    case '24h':
+      cutoffDate = new Date(now.getTime() - (24 * 60 * 60 * 1000));
+      break;
+    case '48h':
+      cutoffDate = new Date(now.getTime() - (48 * 60 * 60 * 1000));
+      break;
+    case '7d':
+      cutoffDate = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
+      break;
+    case '30d':
+      cutoffDate = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
+      break;
+    case 'custom':
+      if (customRange && customRange.start && customRange.end) {
+        const start = new Date(customRange.start);
+        const end = new Date(customRange.end);
+        return (articleDate) => articleDate >= start && articleDate <= end;
+      }
+      return () => true;
+    default:
+      return () => true;
+  }
+  
+  return (articleDate) => articleDate >= cutoffDate;
+};
+
+// Convert published_parsed array to Date object efficiently
+const parseArticleDate = (article) => {
+  if (article.published_parsed && Array.isArray(article.published_parsed)) {
+    const [year, month, day, hour, minute, second] = article.published_parsed;
+    return new Date(year, month - 1, day, hour || 0, minute || 0, second || 0);
+  }
+  // Fallback to string parsing
+  return article.published ? new Date(article.published) : new Date(0);
+};
+
+const ArticleList = ({ 
+  topic, 
+  articles, 
+  activeFilters, 
+  activeSourceFilters, 
+  activeDateFilter, 
+  customDateRange, 
+  getSourceName 
+}) => {
+  // Create date matcher once for efficiency
+  const isDateMatch = createDateMatcher(activeDateFilter, customDateRange);
+  
   const filteredArticles = articles.filter(article => {
-    // Check keyword filters
-    const keywordMatch = activeFilters.size === 0 ? false : 
-      article.matched_keywords && article.matched_keywords.some(keyword => activeFilters.has(keyword));
-    
-    // Check source filters
-    const sourceMatch = activeSourceFilters.size === 0 ? false :
-      article.from_feed && activeSourceFilters.has(article.from_feed);
-    
-    // If no filters are active, show nothing
-    if (activeFilters.size === 0 && activeSourceFilters.size === 0) {
+    // If either filter type has no selections, show nothing
+    if (activeFilters.size === 0 || activeSourceFilters.size === 0) {
       return false;
     }
     
-    // If only keyword filters are active, use keyword match
-    if (activeFilters.size > 0 && activeSourceFilters.size === 0) {
-      return keywordMatch;
-    }
+    // Check keyword filters - at least one keyword must match
+    const keywordMatch = article.matched_keywords && 
+      article.matched_keywords.some(keyword => activeFilters.has(keyword));
     
-    // If only source filters are active, use source match
-    if (activeFilters.size === 0 && activeSourceFilters.size > 0) {
-      return sourceMatch;
-    }
+    // Check source filters - source must be selected
+    const sourceMatch = article.from_feed && activeSourceFilters.has(article.from_feed);
     
-    // If both filters are active, require both to match (AND logic)
-    return keywordMatch && sourceMatch;
+    // Check date filter - convert date once and check
+    const dateMatch = isDateMatch(parseArticleDate(article));
+    
+    // All conditions must be true (AND logic)
+    return keywordMatch && sourceMatch && dateMatch;
   });
 
   const ExternalLinkIcon = () => (
@@ -35,7 +119,7 @@ const ArticleList = ({ topic, articles, activeFilters, activeSourceFilters, getS
     </svg>
   );
 
-  if (activeFilters.size === 0 && activeSourceFilters.size === 0) {
+  if (activeFilters.size === 0 || activeSourceFilters.size === 0) {
     return (
       <div className="bg-white rounded-lg shadow-md p-12">
         <div className="text-center">
@@ -61,7 +145,7 @@ const ArticleList = ({ topic, articles, activeFilters, activeSourceFilters, getS
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
       <h2 className="text-3xl font-bold mb-6 text-gray-800 border-b-2 border-blue-500 pb-2">
-        {topic} News
+        {topic} News ({filteredArticles.length}/{articles.length})
       </h2>
       
       <div className="space-y-6">
@@ -103,10 +187,12 @@ const ArticleList = ({ topic, articles, activeFilters, activeSourceFilters, getS
             ) : null}
             
             <div className="text-gray-700 leading-relaxed mb-3">
-              {article.is_html_summary && article.summary_html ? (
-                <div dangerouslySetInnerHTML={{__html: article.summary_html}} />
+              {article.summary && article.summary !== '-' ? (
+                <p>{article.summary}</p>
+              ) : article.is_html_summary && article.summary_html ? (
+                <div dangerouslySetInnerHTML={{__html: truncateHtml(article.summary_html, 600)}} />
               ) : (
-                <p>{article.summary || 'No summary available'}</p>
+                <p>No summary available</p>
               )}
               {article.has_llm_summary && (
                 <div className="mt-2 text-xs text-blue-600 italic">

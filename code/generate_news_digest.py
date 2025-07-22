@@ -35,9 +35,9 @@ llm = GPT4All(
 print("Model loaded successfully!")
 
 # --- Configuration ---
-SUMMARY_LENGTH_THRESHOLD = 400  # Characters above which to generate LLM summary
-LLM_SUMMARY_TARGET_LENGTH = 50   # Target length for LLM-generated summaries in words
-LLM_SUMMARY_MAX_CHARS = 250      # Maximum character limit for LLM summaries (increased slightly)
+SUMMARY_LENGTH_THRESHOLD = 200  # Characters above which to generate LLM summary
+LLM_SUMMARY_TARGET_LENGTH = 150  # Target length for LLM-generated summaries in words (more aggressive)
+LLM_SUMMARY_MAX_CHARS = 200     # Maximum character limit for LLM summaries (more restrictive)
 
 # --- Helper functions ---
 
@@ -150,19 +150,20 @@ def llm_generate_summary(title, original_summary, target_length_words=50):
         original_summary = original_summary[:800] + "..."
     
     prompt = f"""
-Task: Create a very short, concise summary of this news article for a news digest.
+Task: Create an extremely short, one-sentence summary for a news digest.
 
 Article Title: {title}
 
 Original Summary: {original_summary}
 
 Instructions:
-- Write ONLY 1-2 sentences maximum
-- Keep it under {target_length_words} words
-- Focus on the single most important point
-- Use simple, clear language
-- No HTML, markdown, or special formatting
-- End immediately after the key information
+- Write ONLY one short sentence
+- Maximum {target_length_words} words total
+- Focus on the main point only
+- No details, examples, or background
+- Simple, clear language
+- No HTML, markdown, quotes, or formatting
+- End with a period
 
 Summary:
 """
@@ -218,11 +219,23 @@ Summary:
         if summary and not summary[-1] in '.!?':
             summary += '.'
         
+        # Final aggressive truncation if still too long
+        if len(summary) > LLM_SUMMARY_MAX_CHARS:
+            # Force truncate at word boundary
+            words = summary.split()
+            truncated = []
+            current_length = 0
+            for word in words:
+                if current_length + len(word) + 1 > LLM_SUMMARY_MAX_CHARS - 1:  # Leave room for period
+                    break
+                truncated.append(word)
+                current_length += len(word) + 1
+            summary = ' '.join(truncated)
+            if not summary.endswith('.'):
+                summary += '.'
+        
         # Final validation
         if len(summary) < 10:  # Too short
-            return None
-            
-        if len(summary) > LLM_SUMMARY_MAX_CHARS + 50:  # More forgiving limit
             return None
             
         return summary
@@ -287,14 +300,18 @@ for url in feeds:
                     # Check if summary is too long and generate LLM summary if needed
                     llm_summary = None
                     original_summary = summary_data["text"]
+                    final_summary = original_summary
                     
                     if len(original_summary) > SUMMARY_LENGTH_THRESHOLD:
                         print(f"  📝 Summary too long ({len(original_summary)} chars), generating LLM summary...")
                         llm_summary = llm_generate_summary(entry.title, original_summary, LLM_SUMMARY_TARGET_LENGTH)
                         if llm_summary:
                             print(f"  ✓ LLM summary generated ({len(llm_summary)} chars)")
+                            final_summary = llm_summary
                         else:
-                            print(f"  ⚠️ LLM summary generation failed, using original")
+                            print(f"  ⚠️ LLM summary generation failed, using placeholder")
+                            # Fallback: use placeholder for failed summarization
+                            final_summary = "-"
                     
                     # Get publication date
                     published_time = getattr(entry, 'published_parsed', None)
@@ -304,11 +321,12 @@ for url in feeds:
                     article_data = {
                         "title": entry.title,
                         "link": entry.link,
-                        "summary": llm_summary if llm_summary else summary_data["text"],  # Use LLM summary if available
+                        "summary": final_summary,  # Use LLM summary, fallback truncation, or original
                         "summary_original": summary_data["text"],  # Keep original summary
                         "summary_html": summary_data["html"],  # Original HTML if present
                         "is_html_summary": summary_data["is_html"],  # Flag for frontend
                         "has_llm_summary": llm_summary is not None,  # Flag indicating LLM summary was used
+                        "has_placeholder_summary": (llm_summary is None and len(original_summary) > SUMMARY_LENGTH_THRESHOLD),  # Flag indicating placeholder was used due to failed summarization
                         "from_feed": url,
                         "published_parsed": published_time,
                         "published": getattr(entry, 'published', 'Date not available'),
@@ -341,11 +359,29 @@ for url in feeds:
             cache.mark_article_processed(entry, {"topic": None, "processed": False})
 
 # Sort articles by date (newest first) within each topic
+def get_sort_key(article):
+    """Get a consistent sort key for article dates"""
+    published = article.get('published_parsed')
+    
+    if not published:
+        # No date available, use epoch time
+        return time.struct_time((1970, 1, 1, 0, 0, 0, 0, 0, 0))
+    
+    # Handle different types of date formats
+    if isinstance(published, time.struct_time):
+        return published
+    elif isinstance(published, (list, tuple)) and len(published) >= 6:
+        # Convert list/tuple to struct_time
+        try:
+            return time.struct_time(tuple(published[:9]) + (0,) * (9 - len(published)))
+        except (ValueError, TypeError):
+            return time.struct_time((1970, 1, 1, 0, 0, 0, 0, 0, 0))
+    else:
+        # Fallback for other types
+        return time.struct_time((1970, 1, 1, 0, 0, 0, 0, 0, 0))
+
 for topic in matched:
-    matched[topic].sort(
-        key=lambda x: x['published_parsed'] if x['published_parsed'] else time.struct_time((1970, 1, 1, 0, 0, 0, 0, 0, 0)),
-        reverse=True
-    )
+    matched[topic].sort(key=get_sort_key, reverse=True)
 
 # Clean up old cache entries (older than 30 days) and optimize database
 old_entries_removed = cache.clean_old_entries(max_age_days=30)
