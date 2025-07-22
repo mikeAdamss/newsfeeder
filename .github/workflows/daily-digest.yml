@@ -57,13 +57,12 @@ jobs:
       if: steps.model-cache.outputs.cache-hit != 'true'
       run: |
         mkdir -p models
-        # Try direct download from Hugging Face (no auth needed for public models)
-        curl -L -o models/phi-2.Q4_0.gguf \
-          "https://huggingface.co/microsoft/phi-2-GGUF/resolve/main/phi-2.Q4_0.gguf?download=true" \
-          --fail --show-error --location --progress-bar
+        # Use huggingface-cli download (same command that works locally)
+        poetry run huggingface-cli download QuantFactory/phi-2-GGUF phi-2.Q4_0.gguf \
+          --local-dir ./models --local-dir-use-symlinks False
         
         # Verify the file was downloaded and has reasonable size (should be > 1GB)
-        if [ -f models/phi-2.Q4_0.gguf ] && [ $(stat -f%z models/phi-2.Q4_0.gguf 2>/dev/null || stat -c%s models/phi-2.Q4_0.gguf) -gt 1000000000 ]; then
+        if [ -f models/phi-2.Q4_0.gguf ] && [ $(stat -c%s models/phi-2.Q4_0.gguf) -gt 1000000000 ]; then
           echo "Model downloaded successfully ($(ls -lh models/phi-2.Q4_0.gguf | awk '{print $5}'))"
         else
           echo "Model download failed or file too small"
