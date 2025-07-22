@@ -46,12 +46,30 @@ jobs:
     - name: Install Node.js dependencies
       run: cd newsfeeder-ui && npm ci
       
+    - name: Cache LLM model
+      uses: actions/cache@v4
+      id: model-cache
+      with:
+        path: models/phi-2.Q4_0.gguf
+        key: phi-2-model-v1
+        
     - name: Download LLM model
+      if: steps.model-cache.outputs.cache-hit != 'true'
       run: |
         mkdir -p models
-        if [ ! -f models/phi-2.Q4_0.gguf ]; then
-          wget -O models/phi-2.Q4_0.gguf "https://huggingface.co/microsoft/phi-2-GGUF/resolve/main/phi-2.Q4_0.gguf"
-        fi
+        # Use huggingface-hub to download (handles auth better)
+        python -c "
+        from huggingface_hub import hf_hub_download
+        import os
+        os.makedirs('models', exist_ok=True)
+        hf_hub_download(
+            repo_id='microsoft/phi-2-GGUF',
+            filename='phi-2.Q4_0.gguf',
+            local_dir='models',
+            local_dir_use_symlinks=False
+        )
+        print('Model downloaded successfully')
+        "
       
     - name: Generate news digest
       run: poetry run python code/generate_news_digest.py
