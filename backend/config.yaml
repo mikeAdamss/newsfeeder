@@ -74,6 +74,49 @@ feeds:
   - https://www.infoworld.com/index.rss
   - https://www.computerworld.com/index.rss
 
+  # Psychology & Philosophy
+  - https://www.psychologytoday.com/us/rss
+  - https://www.scientificamerican.com/section/mind-and-brain/feed/
+  - https://www.brainpickings.org/feed/
+  - https://philosophynow.org/rss/articles
+
+  # Self-Help
+  - https://jamesclear.com/feed
+  - https://zenhabits.net/feed/
+  - https://www.lifehack.org/feed
+
+  # Sustainable Gardening
+  - https://www.gardeningknowhow.com/feed
+  - https://www.permaculture.co.uk/feed
+  - https://www.motherearthnews.com/feed/
+
+  # Sci-Fi & Fantasy Books
+  - https://www.tor.com/feed/
+  - https://locusmag.com/feed/
+  - https://www.fantasybookreview.co.uk/feed/
+  
+  # Strategy & RPG Gaming
+  - https://www.pcgamer.com/rss/
+  - https://www.rockpapershotgun.com/strategy/rss
+  - https://www.rpgsite.net/rss/all.xml
+  - https://www.trueachievements.com/feed
+  - https://www.xbox.com/en-US/community/news/rss
+  - https://www.reddit.com/r/XboxSeriesX/.rss
+  - https://www.reddit.com/r/strategy/.rss
+  - https://www.reddit.com/r/rpg_gamers/.rss
+
+  # UK Government & Civil Service
+  - https://www.gov.uk/government/publications/all-publications.atom
+  - https://www.civilserviceworld.com/rss.xml
+  - https://www.theguardian.com/uk-news/rss
+  - https://www.bbc.co.uk/news/politics/rss.xml
+  - https://www.ft.com/uk/rss
+  - https://www.politicshome.com/uk/rss
+  - https://www.instituteforgovernment.org.uk/rss.xml
+  - https://www.localgov.co.uk/news/rss
+  - https://www.publictechnology.net/rss.xml
+  - https://www.civilservicejobs.service.gov.uk/rss/civil-service-jobs.xml
+
 topics:
   AI:
     description: "Articles about artificial intelligence, machine learning, language models, AI companies like OpenAI and Anthropic, AI research breakthroughs, automation technology, computer vision, natural language processing, and AI applications across various industries. Includes news about specific AI models like GPT, Claude, and Gemini."
@@ -179,7 +222,7 @@ topics:
       - typescript react
       - frontend development
       - frontend
-      - javascript
+      -
       - js
 
   DevOps:
@@ -218,3 +261,156 @@ topics:
       - gitlab ci
       - deployment
       - orchestration
+
+  Psychology_Philosophy:
+    description: "Articles about psychology, behavioral science, philosophy (especially Scott R. Baker style), cognitive science, and themes from books like Blindsight. Includes new research, practical applications, and deep dives into human behavior and thought."
+    user_interest: "I'm interested in behavioral psychology, philosophy with a unique or contrarian perspective, and articles that explain complex intellectual ideas in simple terms. I enjoy themes similar to those in the book Blindsight and the works of Scott R. Baker."
+    keywords:
+      - psychology
+      - behavioral science
+      - cognitive science
+      - philosophy
+      - blindsight
+      - scott r baker
+      - consciousness
+      - perception
+      - decision making
+      - cognitive bias
+      - self-awareness
+      - neuropsychology
+      - mind
+      - human behavior
+      - introspection
+      - existential
+      - rationality
+      - critical thinking
+      - thought experiment
+
+  Self_Help:
+    description: "Articles about self-help, personal growth, and books or ideas that offer genuinely new perspectives or simplify complex concepts. Focus on practical advice, unique frameworks, and intellectual self-improvement."
+    user_interest: "I like self-help books and articles, but only those with a truly original take or that explain complex ideas in a simple, actionable way."
+    keywords:
+      - self-help
+      - personal development
+      - self improvement
+      - productivity
+      - motivation
+      - life hacks
+      - growth mindset
+      - new perspective
+      - unique approach
+      - simplify
+      - intellectual
+      - book summary
+      - mental models
+      - habit
+      - learning
+      - self-actualization
+
+  Sustainable_Gardening:
+    description: "Articles about home gardening, sustainable practices, permaculture, prepping, and rambling/outdoor activities. Focus on practical tips for sustainable living and self-sufficiency."
+    user_interest: "I'm interested in sustainable home gardening, permaculture, and light prepping. I also enjoy articles about rambling and outdoor activities."
+    keywords:
+      - gardening
+      - home gardening
+      - sustainable gardening
+      - permaculture
+      - prepping
+      - self-sufficiency
+      - composting
+      - organic gardening
+      - food security
+      - urban farming
+      - raised beds
+      - rainwater harvesting
+      - foraging
+      - rambling
+      - hiking
+      - outdoors
+      - edible plants
+      - homesteading
+
+  SciFi_Fantasy_Books:
+    description: "Articles about science fiction and fantasy literature, book reviews, author interviews, new releases, and genre analysis."
+    user_interest: "I love science fiction and fantasy books, and enjoy reading about new releases, reviews, and deep dives into the genre."
+    keywords:
+      - science fiction
+      - sci-fi
+      - fantasy
+      - speculative fiction
+      - book review
+      - author interview
+      - new release
+      - genre fiction
+      - worldbuilding
+      - space opera
+      - epic fantasy
+      - dystopian
+      - cyberpunk
+      - fantasy novel
+      - sci-fi novel
+
+  Strategy_RPG_Gaming:
+    description: "Articles about strategy games, RPGs, and gaming on Xbox (especially Xbox Live). Includes game reviews, news, tips, and community highlights."
+    user_interest: "I'm interested in strategy and RPG games, especially on Xbox and Xbox Live. I enjoy news, reviews, and tips for these genres."
+    keywords:
+      - strategy game
+      - rpg
+      - xbox
+      - xbox live
+      - turn-based
+      - real-time strategy
+      - tactical rpg
+      - game review
+      - gaming news
+      - role-playing game
+      - open world
+      - fantasy rpg
+      - sci-fi rpg
+      - multiplayer
+      - co-op
+      - game pass
+
+  UK_Civil_Service:
+    description: "News and analysis about the UK government, civil service, public sector policy, Whitehall, and key developments affecting UK civil servants. Includes official government publications, policy changes, and major UK news."
+    user_interest: "As a UK civil servant, I want to keep up with important news, policy changes, and analysis relevant to the UK government and public sector."
+    keywords:
+      - uk government
+      - civil service
+      - whitehall
+      - public sector
+      - uk policy
+      - government policy
+      - parliament
+      - westminster
+      - government jobs
+      - public administration
+      - government reform
+      - local government
+      - government news
+      - uk law
+      - home office
+      - cabinet office
+      - department
+      - select committee
+      - government report
+      - public inquiry
+      - uk legislation
+      - government spending
+      - government digital
+      - gov.uk
+      - civil service jobs
+      # MOJ/Justice
+      - moj
+      - ministry of justice
+      - justice policy
+      - prison
+      - courts
+      - probation
+      # ONS/Statistics
+      - ons
+      - office for national statistics
+      - statistics
+      - data release
+      - official statistics
+      - national statistics

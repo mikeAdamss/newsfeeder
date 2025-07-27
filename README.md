@@ -1,3 +1,5 @@
+THIS IS A WORK IN PROGRESS....
+
 # Newsfeeder - Automated News Digest System
 
 This repo generates an automatic and LLM-filtered personal news site.  

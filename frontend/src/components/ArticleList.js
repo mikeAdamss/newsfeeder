@@ -336,9 +336,29 @@ const ArticleList = ({
             <div className="flex justify-between items-center text-sm text-gray-500 mt-2">
               <span>
                 📅 {article.published || 'Date not available'}
-                {typeof article.relevance_percent === 'number' ? (
+                {/* Relevance percent with fallback and visual cue for missing/invalid */}
+                {typeof article.relevance_percent === 'number' && !isNaN(article.relevance_percent) ? (
                   <span className="ml-3 text-yellow-700 font-semibold">{article.relevance_percent}% relevance</span>
-                ) : null}
+                ) : (
+                  <span className="ml-3 text-yellow-700 font-semibold flex items-center" style={{ opacity: 0.7 }}>
+                    0% relevance
+                    <span className="ml-1 group relative" style={{ display: 'inline-block' }}>
+                      <svg
+                        className="w-4 h-4 text-gray-400 inline-block align-middle"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        style={{ verticalAlign: 'middle', opacity: 0.5 }}
+                      >
+                        <circle cx="12" cy="12" r="10" strokeWidth="2" />
+                        <text x="12" y="16" textAnchor="middle" fontSize="12" fill="#888">?</text>
+                      </svg>
+                      <span className="absolute left-1/2 z-10 hidden group-hover:block bg-gray-800 text-white text-xs rounded px-3 py-2 whitespace-pre w-48 -translate-x-1/2 mt-2 shadow-lg" style={{ pointerEvents: 'none' }}>
+                        Relevance calculation failed
+                      </span>
+                    </span>
+                  </span>
+                )}
                 {article.relevance_reason && (
                   <button
                     className="ml-2 text-xs text-blue-600 underline focus:outline-none"

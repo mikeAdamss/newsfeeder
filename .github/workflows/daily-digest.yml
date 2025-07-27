@@ -1,4 +1,4 @@
-name: Daily News Digest
+name: Update and Deploy to GitHub Pages
 
 # IF we push a backend/config change we want to cancel any running generation,
 # pushing the code change itself will start a enw one.
