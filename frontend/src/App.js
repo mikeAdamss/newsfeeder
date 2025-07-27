@@ -61,7 +61,7 @@ function App() {
       <div className="bg-gray-50 min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="text-6xl mb-4">📰</div>
-          <p className="text-xl text-gray-600">Loading news digest...</p>
+          <p className="text-xl text-gray-600">Loading newsfeed...</p>
         </div>
       </div>
     );
