@@ -91,8 +91,9 @@ const ArticleList = ({
   getSourceName 
 }) => {
   // Add sort and relevance filter state
-  const [sortMode, setSortMode] = useState('recent'); // 'recent', 'keywords', 'relevance'
+  const [sortMode, setSortMode] = useState('recent'); // 'recent', 'keywords', 'relevance', 'least_relevant', 'heuristic'
   const [minRelevance, setMinRelevance] = useState(0); // 0-100
+  const [showReason, setShowReason] = useState({}); // { [index]: boolean }
 
   // Create date matcher once for efficiency
   const isDateMatch = createDateMatcher(activeDateFilter, customDateRange);
@@ -122,18 +123,64 @@ const ArticleList = ({
     return keywordMatch && sourceMatch && dateMatch;
   });
 
+  // Heuristic scoring function
+  const getHeuristicScore = (article) => {
+    // Weights
+    const wRel = 2;
+    const wKey = 1;
+    const wRec = 1;
+    // Relevance percent (0-100)
+    const rel = typeof article.relevance_percent === 'number' ? article.relevance_percent : 0;
+    // Keyword hits
+    const keyHits = article.matched_keywords ? article.matched_keywords.length : 0;
+    // Recency: hours since published (lower is better)
+    const publishedDate = parseArticleDate(article);
+    const now = new Date();
+    const hoursAgo = (now - publishedDate) / (1000 * 60 * 60);
+    // Normalize recency: 0 = now, 1 = 1 day old, 2 = 2 days, cap at 7 days
+    const recencyNorm = Math.max(0, 7 - Math.min(7, hoursAgo / 24)); // 0-7, higher is newer
+    // Heuristic score
+    return (rel * wRel) + (keyHits * wKey) + (recencyNorm * wRec);
+  };
+
   // Sort articles based on sortMode
   let sortedArticles = [...filteredArticles];
   if (sortMode === 'keywords') {
     sortedArticles.sort((a, b) => {
       const aHits = a.matched_keywords ? a.matched_keywords.length : 0;
       const bHits = b.matched_keywords ? b.matched_keywords.length : 0;
-      // Descending by keyword hits, then fallback to date
+      // Descending by keyword hits,
       if (bHits !== aHits) return bHits - aHits;
       // Fallback: most recent first
       return parseArticleDate(b) - parseArticleDate(a);
     });
   } else if (sortMode === 'relevance') {
+    sortedArticles.sort((a, b) => {
+      const aRel = typeof a.relevance_percent === 'number' ? a.relevance_percent : -1;
+      const bRel = typeof b.relevance_percent === 'number' ? b.relevance_percent : -1;
+      if (bRel !== aRel) return bRel - aRel;
+      return parseArticleDate(b) - parseArticleDate(a);
+    });
+  } else if (sortMode === 'least_relevant') {
+    sortedArticles.sort((a, b) => {
+      const aRel = typeof a.relevance_percent === 'number' ? a.relevance_percent : 101;
+      const bRel = typeof b.relevance_percent === 'number' ? b.relevance_percent : 101;
+      if (aRel !== bRel) return aRel - bRel;
+      return parseArticleDate(b) - parseArticleDate(a);
+    });
+  } else if (sortMode === 'heuristic') {
+    sortedArticles.sort((a, b) => getHeuristicScore(b) - getHeuristicScore(a));
+  } else if (sortMode === 'recent_relevance') {
+    // Sort by most recent, then by highest relevance within each date
+    sortedArticles.sort((a, b) => {
+      const dateDiff = parseArticleDate(b) - parseArticleDate(a);
+      if (dateDiff !== 0) return dateDiff;
+      const aRel = typeof a.relevance_percent === 'number' ? a.relevance_percent : -1;
+      const bRel = typeof b.relevance_percent === 'number' ? b.relevance_percent : -1;
+      return bRel - aRel;
+    });
+  } else if (sortMode === 'relevance_recent') {
+    // Sort by highest relevance, then by most recent within each relevance score
     sortedArticles.sort((a, b) => {
       const aRel = typeof a.relevance_percent === 'number' ? a.relevance_percent : -1;
       const bRel = typeof b.relevance_percent === 'number' ? b.relevance_percent : -1;
@@ -150,6 +197,17 @@ const ArticleList = ({
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
     </svg>
   );
+
+  // Map sort modes to descriptions
+  const SORT_MODE_DESCRIPTIONS = {
+    recent: 'Sorts articles by most recent publication date.',
+    keywords: 'Sorts by the number of matched keywords (descending), then by date.',
+    relevance: 'Sorts by AI-assigned relevance percent (highest first), then by date.',
+    least_relevant: 'Sorts by lowest AI-assigned relevance percent, then by date.',
+    heuristic: 'Sorts by a combined score: (2×relevance) + keyword hits + recency.',
+    recent_relevance: 'Sorts by most recent, then by highest relevance within each date.',
+    relevance_recent: 'Sorts by highest relevance, then by most recent within each relevance score.'
+  };
 
   if (activeFilters.size === 0 || activeSourceFilters.size === 0) {
     return (
@@ -181,26 +239,48 @@ const ArticleList = ({
           {topic} News
         </h2>
         <label htmlFor="sortMode" className="mr-2 font-medium text-gray-700">Sort by:</label>
-        <select
-          id="sortMode"
-          value={sortMode}
-          onChange={e => setSortMode(e.target.value)}
-          className="border rounded px-2 py-1 text-gray-700 mr-4"
-        >
-          <option value="recent">Most Recent</option>
-          <option value="keywords">Most Keyword Hits</option>
-          <option value="relevance">Highest Relevance</option>
-        </select>
+        <div className="relative flex items-center mr-2">
+          <select
+            id="sortMode"
+            value={sortMode}
+            onChange={e => setSortMode(e.target.value)}
+            className="border rounded px-2 py-1 text-gray-700 mr-1"
+          >
+            <option value="recent">Most Recent</option>
+            <option value="keywords">Most Keyword Hits</option>
+            <option value="relevance">Highest Relevance</option>
+            <option value="least_relevant">Least Relevant</option>
+            <option value="heuristic">Heuristic (AI+Keywords+Recency)</option>
+            <option value="recent_relevance">Recent, then Relevance</option>
+            <option value="relevance_recent">Relevance, then Recent</option>
+          </select>
+          <span className="relative group cursor-pointer">
+            <svg
+              className="w-4 h-4 text-gray-400 ml-1 inline-block align-middle"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              style={{ verticalAlign: 'middle' }}
+            >
+              <circle cx="12" cy="12" r="10" strokeWidth="2" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 16v-4m0-4h.01" />
+            </svg>
+            <div className="absolute left-1/2 z-10 hidden group-hover:block bg-gray-800 text-white text-xs rounded px-3 py-2 whitespace-pre w-64 -translate-x-1/2 mt-2 shadow-lg" style={{ pointerEvents: 'none' }}>
+              {SORT_MODE_DESCRIPTIONS[sortMode]}
+            </div>
+          </span>
+        </div>
         <label htmlFor="minRelevance" className="ml-2 mr-1 font-medium text-gray-700">Min Relevance:</label>
-        <input
+        <select
           id="minRelevance"
-          type="number"
-          min={0}
-          max={100}
           value={minRelevance}
           onChange={e => setMinRelevance(Number(e.target.value))}
-          className="border rounded px-2 py-1 w-20 text-gray-700 mr-4"
-        />
+          className="border rounded px-2 py-1 w-24 text-gray-700 mr-4"
+        >
+          {[...Array(11).keys()].map(i => (
+            <option key={i * 10} value={i * 10}>{i * 10}%</option>
+          ))}
+        </select>
         <span className="text-lg text-gray-600">({sortedArticles.length}/{articles.length})</span>
       </div>
       <div className="space-y-6">
@@ -220,7 +300,6 @@ const ArticleList = ({
                 <ExternalLinkIcon />
               </a>
             </h3>
-            
             {(article.matched_keywords && article.matched_keywords.length > 0) || article.from_feed ? (
               <div className="mb-3">
                 <div className="flex flex-wrap gap-1">
@@ -240,18 +319,6 @@ const ArticleList = ({
                 </div>
               </div>
             ) : null}
-            
-            <div className="mb-2">
-              {typeof article.relevance_percent === 'number' && (
-                <span className="text-xs px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full mr-2">
-                  Relevance: {article.relevance_percent}%
-                </span>
-              )}
-              {article.relevance_reason && (
-                <span className="text-xs text-gray-500 italic">{article.relevance_reason}</span>
-              )}
-            </div>
-            
             <div className="text-gray-700 leading-relaxed mb-3">
               {article.summary && article.summary !== '-' ? (
                 <p>{article.summary}</p>
@@ -266,9 +333,21 @@ const ArticleList = ({
                 </div>
               )}
             </div>
-            
-            <div className="flex justify-between items-center text-sm text-gray-500">
-              <span>📅 {article.published || 'Date not available'}</span>
+            <div className="flex justify-between items-center text-sm text-gray-500 mt-2">
+              <span>
+                📅 {article.published || 'Date not available'}
+                {typeof article.relevance_percent === 'number' ? (
+                  <span className="ml-3 text-yellow-700 font-semibold">{article.relevance_percent}% relevance</span>
+                ) : null}
+                {article.relevance_reason && (
+                  <button
+                    className="ml-2 text-xs text-blue-600 underline focus:outline-none"
+                    onClick={() => setShowReason(prev => ({ ...prev, [index]: !prev[index] }))}
+                  >
+                    {showReason[index] ? 'Hide reason' : 'Show reason'}
+                  </button>
+                )}
+              </span>
               <a 
                 href={article.from_feed}
                 className="text-blue-600 hover:text-blue-800 hover:underline"
@@ -278,6 +357,11 @@ const ArticleList = ({
                 {getSourceName ? getSourceName(article.from_feed) : 'Source Feed'} →
               </a>
             </div>
+            {article.relevance_reason && showReason[index] && (
+              <div className="mt-2 text-xs text-gray-700 bg-yellow-50 border-l-4 border-yellow-300 p-2 rounded">
+                <span className="font-semibold">Relevance reason:</span> {article.relevance_reason}
+              </div>
+            )}
           </article>
         ))}
       </div>

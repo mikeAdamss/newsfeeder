@@ -9,6 +9,7 @@ import json
 import html
 from html.parser import HTMLParser
 import os
+import hashlib
 
 # --- Load config ---
 config_dir = Path(__file__).parent
@@ -284,6 +285,15 @@ Question: On a scale from 0% (not relevant) to 100% (perfectly relevant), what p
         print(f"Error scoring relevance for '{entry.title}': {e}")
         return None, f"llm error: {str(e).lower()}"
 
+def get_topic_hash(topic_config):
+    """Hash the topic's keywords, description, and user_interest for cache validation."""
+    hash_input = json.dumps({
+        'keywords': sorted(topic_config.get('keywords', [])),
+        'description': topic_config.get('description', ''),
+        'user_interest': topic_config.get('user_interest', '')
+    }, sort_keys=True)
+    return hashlib.sha256(hash_input.encode('utf-8')).hexdigest()
+
 # --- Parse and collect matches with two-stage filtering ---
 matched = {topic: [] for topic in topics}
 all_keywords_used = {topic: set() for topic in topics}
@@ -306,27 +316,26 @@ for url in feeds:
         processed_count += 1
         print(f"Processing entry {processed_count}: {entry.title}")
         
-        # Check if we should process this article
-        should_process, reason = cache.should_process_article(entry)
-        
-        if not should_process:
-            # Use cached result
-            cached_result = cache.get_cached_result(entry)
-            if cached_result:
-                topic_name = cached_result.get("topic")
-                if topic_name and topic_name in matched:
+        article_processed = False
+        for topic_name, topic_config in topics.items():
+            topic_hash = get_topic_hash(topic_config)
+            # Check if we should process this article for this topic+hash
+            should_process, reason = cache.should_process_article(entry, topic=topic_name, topic_hash=topic_hash)
+            if not should_process:
+                # Use cached result for this topic
+                cached_result = cache.get_cached_result(entry, topic=topic_name, topic_hash=topic_hash)
+                if cached_result and cached_result.get('topic') == topic_name:
                     matched[topic_name].append(cached_result["article_data"])
                     all_keywords_used[topic_name].update(cached_result["article_data"]["matched_keywords"])
                     cached_count += 1
                     print(f"  ✓ Using cached result for {topic_name}")
+                    article_processed = True
+                    break  # Only assign to one topic
                 continue
-        else:
-            new_count += 1
-            print(f"  🔄 Processing ({reason})")
-        
-        # Process the article (existing logic)
-        article_processed = False
-        for topic_name, topic_config in topics.items():
+            else:
+                new_count += 1
+                print(f"  🔄 Processing {topic_name} ({reason})")
+            # --- Process the article (existing logic) ---
             keywords = topic_config['keywords']
             description = topic_config['description']
             user_interest = topic_config.get('user_interest', '')
@@ -390,26 +399,23 @@ for url in feeds:
                     matched[topic_name].append(article_data)
                     all_keywords_used[topic_name].update(matched_keywords)
                     
-                    # Cache the result
+                    # Cache the result for this topic+hash
                     cache_data = {
                         "topic": topic_name,
+                        "topic_hash": topic_hash,
                         "article_data": article_data,
                         "keywords_matched": matched_keywords,
                         "ai_reasoning": ai_reasoning
                     }
-                    cache.mark_article_processed(entry, cache_data)
+                    cache.mark_article_processed(entry, cache_data, topic=topic_name, topic_hash=topic_hash)
                     
                     print(f"  ✓ Article confirmed for {topic_name}")
                     article_processed = True
                     break  # Only assign to one topic
                 else:
                     print(f"  ✗ Article rejected for {topic_name} - Reason: {ai_reasoning}")
-            # If no keywords match, don't even check with LLM
-        
-        # If article wasn't processed by any topic, still cache the negative result
-        if not article_processed:
-            cache.mark_article_processed(entry, {"topic": None, "processed": False})
-
+        # If article wasn't processed by any topic, do not mark as globally processed; only per-topic+hash
+        # (No global cache.mark_article_processed call here)
     # If time limit reached, stop processing further feeds
     if max_processing_time and (time.time() - start_time) > max_processing_time:
         break
