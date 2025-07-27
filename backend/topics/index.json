@@ -1,0 +1,21 @@
+{
+  "topics": [
+    "AI",
+    "Climate",
+    "Python",
+    "React",
+    "DevOps"
+  ],
+  "generated_at": "2025-07-27 11:08:56",
+  "summary": {
+    "total_topics": 5,
+    "total_articles": 1110,
+    "articles_by_topic": {
+      "AI": 225,
+      "Climate": 124,
+      "Python": 499,
+      "React": 145,
+      "DevOps": 117
+    }
+  }
+}

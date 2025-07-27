@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 // Helper function to truncate HTML content
 const truncateHtml = (html, maxLength = 800) => {
@@ -90,6 +90,10 @@ const ArticleList = ({
   customDateRange, 
   getSourceName 
 }) => {
+  // Add sort and relevance filter state
+  const [sortMode, setSortMode] = useState('recent'); // 'recent', 'keywords', 'relevance'
+  const [minRelevance, setMinRelevance] = useState(0); // 0-100
+
   // Create date matcher once for efficiency
   const isDateMatch = createDateMatcher(activeDateFilter, customDateRange);
   
@@ -109,9 +113,37 @@ const ArticleList = ({
     // Check date filter - convert date once and check
     const dateMatch = isDateMatch(parseArticleDate(article));
     
+    // Relevance filter
+    if (typeof article.relevance_percent === 'number' && article.relevance_percent < minRelevance) {
+      return false;
+    }
+    
     // All conditions must be true (AND logic)
     return keywordMatch && sourceMatch && dateMatch;
   });
+
+  // Sort articles based on sortMode
+  let sortedArticles = [...filteredArticles];
+  if (sortMode === 'keywords') {
+    sortedArticles.sort((a, b) => {
+      const aHits = a.matched_keywords ? a.matched_keywords.length : 0;
+      const bHits = b.matched_keywords ? b.matched_keywords.length : 0;
+      // Descending by keyword hits, then fallback to date
+      if (bHits !== aHits) return bHits - aHits;
+      // Fallback: most recent first
+      return parseArticleDate(b) - parseArticleDate(a);
+    });
+  } else if (sortMode === 'relevance') {
+    sortedArticles.sort((a, b) => {
+      const aRel = typeof a.relevance_percent === 'number' ? a.relevance_percent : -1;
+      const bRel = typeof b.relevance_percent === 'number' ? b.relevance_percent : -1;
+      if (bRel !== aRel) return bRel - aRel;
+      return parseArticleDate(b) - parseArticleDate(a);
+    });
+  } else {
+    // Default: most recent first
+    sortedArticles.sort((a, b) => parseArticleDate(b) - parseArticleDate(a));
+  }
 
   const ExternalLinkIcon = () => (
     <svg className="inline w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -131,7 +163,7 @@ const ArticleList = ({
     );
   }
 
-  if (filteredArticles.length === 0) {
+  if (sortedArticles.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow-md p-12">
         <div className="text-center">
@@ -144,12 +176,35 @@ const ArticleList = ({
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-3xl font-bold mb-6 text-gray-800 border-b-2 border-blue-500 pb-2">
-        {topic} News ({filteredArticles.length}/{articles.length})
-      </h2>
-      
+      <div className="flex flex-wrap items-center mb-4 gap-2">
+        <h2 className="text-3xl font-bold text-gray-800 border-b-2 border-blue-500 pb-2 mr-4">
+          {topic} News
+        </h2>
+        <label htmlFor="sortMode" className="mr-2 font-medium text-gray-700">Sort by:</label>
+        <select
+          id="sortMode"
+          value={sortMode}
+          onChange={e => setSortMode(e.target.value)}
+          className="border rounded px-2 py-1 text-gray-700 mr-4"
+        >
+          <option value="recent">Most Recent</option>
+          <option value="keywords">Most Keyword Hits</option>
+          <option value="relevance">Highest Relevance</option>
+        </select>
+        <label htmlFor="minRelevance" className="ml-2 mr-1 font-medium text-gray-700">Min Relevance:</label>
+        <input
+          id="minRelevance"
+          type="number"
+          min={0}
+          max={100}
+          value={minRelevance}
+          onChange={e => setMinRelevance(Number(e.target.value))}
+          className="border rounded px-2 py-1 w-20 text-gray-700 mr-4"
+        />
+        <span className="text-lg text-gray-600">({sortedArticles.length}/{articles.length})</span>
+      </div>
       <div className="space-y-6">
-        {filteredArticles.map((article, index) => (
+        {sortedArticles.map((article, index) => (
           <article 
             key={`${article.link}-${index}`}
             className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 border-l-4 border-blue-500"
@@ -185,6 +240,17 @@ const ArticleList = ({
                 </div>
               </div>
             ) : null}
+            
+            <div className="mb-2">
+              {typeof article.relevance_percent === 'number' && (
+                <span className="text-xs px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full mr-2">
+                  Relevance: {article.relevance_percent}%
+                </span>
+              )}
+              {article.relevance_reason && (
+                <span className="text-xs text-gray-500 italic">{article.relevance_reason}</span>
+              )}
+            </div>
             
             <div className="text-gray-700 leading-relaxed mb-3">
               {article.summary && article.summary !== '-' ? (

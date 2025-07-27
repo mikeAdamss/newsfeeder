@@ -250,6 +250,40 @@ Summary:
         print(f"Error generating LLM summary: {e}")
         return None
 
+def llm_relevance_percent(entry, topic, topic_description, user_interest):
+    """Use LLM to rate article relevance to user interest as a percentage (0-100) and provide a reason"""
+    summary = entry.get('summary', 'No summary available')
+    if len(summary) > 500:
+        summary = summary[:500] + "..."
+    prompt = f'''
+Task: Rate how relevant this article is to the user's interest in the topic "{topic}".
+
+Topic Description: {topic_description}
+User Interest: {user_interest}
+Article Title: {entry.title}
+Article Summary: {summary}
+
+Question: On a scale from 0% (not relevant) to 100% (perfectly relevant), what percentage best represents how well this article matches the user's interest? Answer with a single number (0-100) followed by a brief reason.
+'''
+    try:
+        response = llm.generate(prompt, max_tokens=50).strip()
+        import re
+        match = re.match(r"(\d{1,3})\s*[%]?[\s:.,-]+(.*)", response)
+        if match:
+            percent = int(match.group(1))
+            percent = max(0, min(percent, 100))
+            reason = match.group(2).strip()
+            return percent, reason
+        # Fallback: try to extract a number
+        numbers = re.findall(r"\d{1,3}", response)
+        percent = int(numbers[0]) if numbers else None
+        if percent is not None:
+            percent = max(0, min(percent, 100))
+        return percent, response
+    except Exception as e:
+        print(f"Error scoring relevance for '{entry.title}': {e}")
+        return None, f"llm error: {str(e).lower()}"
+
 # --- Parse and collect matches with two-stage filtering ---
 matched = {topic: [] for topic in topics}
 all_keywords_used = {topic: set() for topic in topics}
@@ -295,6 +329,7 @@ for url in feeds:
         for topic_name, topic_config in topics.items():
             keywords = topic_config['keywords']
             description = topic_config['description']
+            user_interest = topic_config.get('user_interest', '')
             
             # Stage 1: Keyword pre-filtering
             matched_keywords, keyword_matches = match_topic(entry, keywords)
@@ -330,6 +365,9 @@ for url in feeds:
                     if not published_time:
                         published_time = getattr(entry, 'updated_parsed', None)
                     
+                    # LLM relevance percent for user interest
+                    relevance_percent, relevance_reason = llm_relevance_percent(entry, topic_name, description, user_interest)
+                    
                     article_data = {
                         "title": entry.title,
                         "link": entry.link,
@@ -344,7 +382,9 @@ for url in feeds:
                         "published": getattr(entry, 'published', 'Date not available'),
                         "matched_keywords": matched_keywords,
                         "keyword_matches": keyword_matches,
-                        "ai_reasoning": ai_reasoning
+                        "ai_reasoning": ai_reasoning,
+                        "relevance_percent": relevance_percent,
+                        "relevance_reason": relevance_reason
                     }
                     
                     matched[topic_name].append(article_data)
