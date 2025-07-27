@@ -45,48 +45,9 @@ Best of all it's pretty customisable so gives anyone that wants one a free websi
 
 ---
 
-## Why I Built This
-
-I wanted a personal news dashboard that was:
-- **Truly mine** (no ads, no tracking, no paywalls)
-- **Smart** (uses LLMs for real summarization and topic detection)
-- **Automated** (runs itself every day, no manual work)
-- **A playground** for experimenting with Python, React, LLMs, and CI/CD
-
-It’s also a great way to demonstrate:
-- End-to-end automation (Python backend, React frontend, CI/CD)
-- Practical use of LLMs and prompt engineering
-- Workflow design (GitHub Actions, model caching, static deploys)
-- Clean, maintainable code and documentation
-
----
-
-## Quick Start
-
-Want to see it in action?  
-Check out the [live site](https://mikeadamss.github.io/newsfeeder/) or clone the repo and run it locally!
-
----
 
 ## Technical Setup
 
-For full installation and customization instructions, see [TECHNICAL_SETUP.md](./TECHNICAL_SETUP.md).
+For full installation and customization instructions ro run your own one of these (it's really easy), see [TECHNICAL_SETUP.md](./TECHNICAL_SETUP.md).
 
 ---
-
-## Screenshots
-
-*(Add screenshots here if you want!)*
-
----
-
-## License
-
-MIT – use, fork, and tinker as you like.
-
----
-
-## Contact
-
-Questions, ideas, or want to collaborate?  
-Open an issue or reach out via GitHub!
