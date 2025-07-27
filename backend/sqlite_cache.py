@@ -84,22 +84,24 @@ class SQLiteProcessingCache:
         link = getattr(entry, 'link', '') or ''
         return hashlib.md5(f"{title}|{link}".encode()).hexdigest()
     
-    def should_process_article(self, entry) -> Tuple[bool, str]:
-        """Check if article needs processing"""
+    def should_process_article(self, entry, topic=None, topic_hash=None) -> Tuple[bool, str]:
+        """Check if article needs processing for a given topic and topic_hash (for per-topic cache)"""
         article_key = self._get_article_key(entry)
-        
         conn = sqlite3.connect(self.db_file)
         cursor = conn.cursor()
-        
-        # Check if article exists in cache with current script version
-        cursor.execute('''
-            SELECT script_version FROM article_cache 
-            WHERE article_key = ? AND script_version = ?
-        ''', (article_key, self.script_version))
-        
+        if topic is not None and topic_hash is not None:
+            # Per-topic+hash cache (future-proof, not used in current schema)
+            cursor.execute('''
+                SELECT script_version FROM article_cache 
+                WHERE article_key = ? AND topic = ? AND script_version = ?
+            ''', (article_key, topic, self.script_version))
+        else:
+            cursor.execute('''
+                SELECT script_version FROM article_cache 
+                WHERE article_key = ? AND script_version = ?
+            ''', (article_key, self.script_version))
         result = cursor.fetchone()
         conn.close()
-        
         if result is None:
             # Check if article exists but with old version
             conn = sqlite3.connect(self.db_file)
@@ -107,29 +109,22 @@ class SQLiteProcessingCache:
             cursor.execute('SELECT script_version FROM article_cache WHERE article_key = ?', (article_key,))
             old_result = cursor.fetchone()
             conn.close()
-            
             if old_result:
                 return True, "script_updated"
             else:
                 return True, "new_article"
-        
         return False, "already_processed"
     
-    def mark_article_processed(self, entry, result_data: Dict[str, Any]):
-        """Mark article as processed with current script version"""
+    def mark_article_processed(self, entry, result_data: Dict[str, Any], topic=None, topic_hash=None):
+        """Mark article as processed for a given topic and topic_hash (for per-topic cache)"""
         article_key = self._get_article_key(entry)
-        
         conn = sqlite3.connect(self.db_file)
         cursor = conn.cursor()
-        
-        # Extract some key fields for easier querying
-        topic = result_data.get("topic")
+        topic_val = topic or result_data.get("topic")
         matched_keywords = json.dumps(result_data.get("keywords_matched", []))
         from_feed = None
         if result_data.get("article_data"):
             from_feed = result_data["article_data"].get("from_feed")
-        
-        # Insert or replace the cache entry
         cursor.execute('''
             INSERT OR REPLACE INTO article_cache 
             (article_key, title, link, script_version, processed_at, result_json, topic, matched_keywords, from_feed)
@@ -141,35 +136,35 @@ class SQLiteProcessingCache:
             self.script_version,
             datetime.now(),
             json.dumps(result_data),
-            topic,
+            topic_val,
             matched_keywords,
             from_feed
         ))
-        
         conn.commit()
         conn.close()
     
-    def get_cached_result(self, entry) -> Optional[Dict[str, Any]]:
-        """Get cached processing result if available and valid"""
+    def get_cached_result(self, entry, topic=None, topic_hash=None) -> Optional[Dict[str, Any]]:
+        """Get cached processing result for a given topic and topic_hash (for per-topic cache)"""
         article_key = self._get_article_key(entry)
-        
         conn = sqlite3.connect(self.db_file)
         cursor = conn.cursor()
-        
-        cursor.execute('''
-            SELECT result_json FROM article_cache 
-            WHERE article_key = ? AND script_version = ?
-        ''', (article_key, self.script_version))
-        
+        if topic is not None and topic_hash is not None:
+            cursor.execute('''
+                SELECT result_json FROM article_cache 
+                WHERE article_key = ? AND topic = ? AND script_version = ?
+            ''', (article_key, topic, self.script_version))
+        else:
+            cursor.execute('''
+                SELECT result_json FROM article_cache 
+                WHERE article_key = ? AND script_version = ?
+            ''', (article_key, self.script_version))
         result = cursor.fetchone()
         conn.close()
-        
         if result:
             try:
                 return json.loads(result[0])
             except json.JSONDecodeError:
                 return None
-        
         return None
     
     def get_cache_stats(self) -> Dict[str, Any]:
