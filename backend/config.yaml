@@ -1,0 +1,215 @@
+# Maximum time (in seconds) to spend processing articles per run. Set to 0 or comment out for unlimited.
+max_processing_time: 3600  # 1 hour (configurable)
+
+feeds:
+  # General Tech & News
+  - https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml
+  - https://feeds.bbci.co.uk/news/world/rss.xml
+  - https://feeds.arstechnica.com/arstechnica/index
+  - https://techcrunch.com/feed/
+  - https://www.theverge.com/rss/index.xml
+  - https://feeds.feedburner.com/venturebeat/SZYF
+  - https://www.wired.com/feed/rss
+  - https://rss.cnn.com/rss/edition.rss
+  - https://feeds.reuters.com/reuters/technologyNews
+  - https://www.reddit.com/r/technology/.rss
+  
+  # AI & Machine Learning
+  - https://blog.openai.com/rss/
+  - https://deepmind.com/blog/rss.xml
+  - https://ai.googleblog.com/feeds/posts/default
+  - https://www.anthropic.com/news/rss
+  - https://blog.research.google/feeds/posts/default
+  - https://www.reddit.com/r/MachineLearning/.rss
+  - https://www.reddit.com/r/artificial/.rss
+  - https://towardsdatascience.com/feed
+  
+  # Climate & Environment
+  - https://www.climatecentral.org/news/feed
+  - https://insideclimatenews.org/feed/
+  - https://www.carbonbrief.org/feed/
+  - https://cleantechnica.com/feed/
+  - https://www.greentechmedia.com/rss/all
+  - https://electrek.co/feed/
+  - https://www.reddit.com/r/ClimateChange/.rss
+  - https://www.reddit.com/r/environment/.rss
+  
+  # Python Development
+  - https://realpython.com/atom.xml
+  - https://planetpython.org/rss20.xml
+  - https://pyfound.blogspot.com/feeds/posts/default
+  - https://www.python.org/jobs/feed/rss/
+  - https://www.reddit.com/r/Python/.rss
+  - https://www.reddit.com/r/learnpython/.rss
+  - https://talkpython.fm/episodes/rss
+  
+  # React & Frontend Development
+  - https://reactjs.org/feed.xml
+  - https://blog.react.dev/rss.xml
+  - https://nextjs.org/feed.xml
+  - https://css-tricks.com/feed/
+  - https://dev.to/feed/tag/react
+  - https://www.smashingmagazine.com/feed/
+  - https://www.reddit.com/r/reactjs/.rss
+  - https://www.reddit.com/r/Frontend/.rss
+  
+  # DevOps & Cloud
+  - https://aws.amazon.com/blogs/aws/feed/
+  - https://azure.microsoft.com/en-us/blog/feed/
+  - https://cloud.google.com/blog/rss
+  - https://blog.docker.com/feed/
+  - https://kubernetes.io/feed.xml
+  - https://www.hashicorp.com/blog/feed.xml
+  - https://www.reddit.com/r/devops/.rss
+  - https://www.reddit.com/r/kubernetes/.rss
+  - https://devops.com/feed/
+  - https://www.cncf.io/feed/
+  
+  # Programming & Software Development
+  - https://stackoverflow.blog/feed/
+  - https://github.blog/feed/
+  - https://dev.to/feed
+  - https://hacker-news.firebaseio.com/v0/topstories.json
+  - https://lobste.rs/rss
+  - https://www.infoworld.com/index.rss
+  - https://www.computerworld.com/index.rss
+
+topics:
+  AI:
+    description: "Articles about artificial intelligence, machine learning, language models, AI companies like OpenAI and Anthropic, AI research breakthroughs, automation technology, computer vision, natural language processing, and AI applications across various industries. Includes news about specific AI models like GPT, Claude, and Gemini."
+    keywords:
+      - openai
+      - llm
+      - chatbot
+      - artificial intelligence
+      - machine learning
+      - deep learning
+      - neural network
+      - gpt
+      - claude
+      - gemini
+      - anthropic
+      - generative ai
+      - large language model
+      - transformer
+      - ai model
+      - automation
+      - computer vision
+      - natural language processing
+      - nlp
+      - grok
+      - chatgpt
+      - gpt
+
+  Climate:
+    description: "Articles about climate change, environmental issues, renewable energy developments, sustainability initiatives, carbon emissions and reduction efforts, climate policy and agreements, green technology innovations, electric vehicles, and environmental impact of various industries and technologies."
+    keywords:
+      - carbon
+      - emissions
+      - net zero
+      - climate change
+      - global warming
+      - greenhouse gas
+      - renewable energy
+      - solar power
+      - wind energy
+      - fossil fuels
+      - carbon footprint
+      - sustainability
+      - green technology
+      - electric vehicle
+      - ev
+      - carbon capture
+      - paris agreement
+      - cop28
+      - cop29
+      - environmental
+
+  Python:
+    description: "Articles about Python programming language, including new Python releases, popular frameworks like Django and Flask, data science libraries such as pandas and NumPy, Python development tools, tutorials, best practices, and Python's use in various applications from web development to machine learning."
+    keywords:
+      - python
+      - django
+      - flask
+      - fastapi
+      - pandas
+      - numpy
+      - pytest
+      - pip
+      - conda
+      - jupyter
+      - python 3
+      - pep 8
+      - pypi
+      - virtualenv
+      - anaconda
+      - python programming
+      - python development
+      - python library
+      - python framework
+      - python tutorial
+      - pytest
+
+  React:
+    description: "Articles about React.js development, including React framework updates, React Native for mobile development, popular React libraries and tools, state management solutions like Redux, React ecosystem developments, Next.js and other React-based frameworks, and React development best practices."
+    keywords:
+      - react
+      - reactjs
+      - jsx
+      - react native
+      - next.js
+      - nextjs
+      - gatsby
+      - react hooks
+      - react component
+      - create-react-app
+      - react router
+      - redux
+      - context api
+      - react testing library
+      - react development
+      - react js
+      - react framework
+      - react app
+      - react programming
+      - typescript react
+      - frontend development
+      - frontend
+      - javascript
+      - js
+
+  DevOps:
+    description: "Articles about DevOps practices, containerization technologies like Docker and Kubernetes, CI/CD pipelines, infrastructure as code, cloud platforms (AWS, Azure, GCP), monitoring and deployment tools, automation in software development, system administration, and the intersection of development and operations teams."
+    keywords:
+      - devops
+      - docker
+      - kubernetes
+      - k8s
+      - jenkins
+      - ci/cd
+      - continuous integration
+      - continuous deployment
+      - terraform
+      - ansible
+      - chef
+      - puppet
+      - aws
+      - azure
+      - google cloud
+      - gcp
+      - containerization
+      - microservices
+      - infrastructure as code
+      - monitoring
+      - prometheus
+      - grafana
+      - nginx
+      - apache
+      - linux
+      - bash
+      - shell scripting
+      - git
+      - github actions
+      - gitlab ci
+      - deployment
+      - orchestration

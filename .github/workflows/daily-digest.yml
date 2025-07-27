@@ -1,5 +1,12 @@
 name: Daily News Digest
 
+# IF we push a backend/config change we want to cancel any running generation,
+# pushing the code change itself will start a enw one.
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true 
+
+
 # Run every 2 hours (adjust cron as needed)
 on:
   schedule:
@@ -41,10 +48,10 @@ jobs:
       with:
         node-version: '18'
         cache: 'npm'
-        cache-dependency-path: newsfeeder-ui/package-lock.json
+        cache-dependency-path: frontend/package-lock.json
         
     - name: Install Node.js dependencies
-      run: cd newsfeeder-ui && npm ci
+      run: cd frontend && npm ci
       
     - name: Cache LLM model
       uses: actions/cache@v4
@@ -70,13 +77,13 @@ jobs:
         fi
       
     - name: Generate news digest
-      run: poetry run python code/generate_news_digest.py
+      run: poetry run python backend/generate_news_digest.py
       
     - name: Commit updated cache database
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        git add code/processing_cache.db
+        git add backend/processing_cache.db
         if ! git diff --staged --quiet; then
           git commit -m "Update cache database after daily digest generation [skip ci]"
           git push
@@ -84,16 +91,19 @@ jobs:
       
     - name: Copy topic JSON files to React public folder
       run: |
-        mkdir -p newsfeeder-ui/public/topics
-        cp code/topics/*.json newsfeeder-ui/public/topics/
+        mkdir -p frontend/public/topics
+        cp backend/topics/*.json frontend/public/topics/
       
-    - name: Build React application
-      run: cd newsfeeder-ui && npm run build
+    - name: Build frontend
+      run: |
+        cd frontend
+        npm install
+        npm run build
       
     - name: Copy topic JSON files to build folder
       run: |
-        mkdir -p newsfeeder-ui/build/topics
-        cp code/topics/*.json newsfeeder-ui/build/topics/
+        mkdir -p frontend/build/topics
+        cp backend/topics/*.json frontend/build/topics/
       
     - name: Setup Pages
       uses: actions/configure-pages@v4
@@ -101,7 +111,7 @@ jobs:
     - name: Upload to GitHub Pages
       uses: actions/upload-pages-artifact@v3
       with:
-        path: ./newsfeeder-ui/build
+        path: ./frontend/build
         
     - name: Deploy to GitHub Pages
       id: deployment

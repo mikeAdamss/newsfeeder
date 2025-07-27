@@ -5,6 +5,14 @@ This repo generates an automatic and LLM-filtered personal news site.
 
 ---
 
+## What is Newsfeeder?
+
+Newsfeeder started as a Sunday afternoon experiment to see if I could combine RSS feeds, some keyword tricks, and a local LLM into a personal news dashboard. It turned out ok so I thought I'd share it. It essentially pulls in news from all over, filters and summarizes it, and presents everything in a clean React web app. It’s easy to extend and makes for a nice playground for automation and LLMs with a light frontend and a little git and full-stack trickery to make it work.
+
+Best of all it's pretty customisable so gives anyone that wants one a free website of articles _taht they care about_ with an interesting LLM spin in it, tis pretty cool.
+
+---
+
 ## How It Works
 
 - **1. Keyword Filtering:**
@@ -22,12 +30,6 @@ This repo generates an automatic and LLM-filtered personal news site.
   The backend outputs per-topic JSON files, and the React frontend automatically builds a modern, filterable news website. The whole process is automated and deployed via GitHub Actions.
 
 **Current setup:** We gather and process articles for up to 1 hour per run, and the workflow is scheduled to run every 2 hours. (You can adjust both values; see the technical setup for details.)
-
----
-
-## What is Newsfeeder?
-
-Newsfeeder is a personal project that brings together the latest news from your favorite sources, filters and summarizes them using both classic keyword techniques and modern LLMs (Large Language Models), and presents everything in a clean, fast React web app. It’s designed to be easy to extend, fun to tinker with, and a great way to showcase some full-stack automation and AI skills.
 
 ---
 
