@@ -28,7 +28,7 @@ const getSourceName = (feedUrl) => {
     
     // For Reddit, extract subreddit name
     if (domain === 'reddit.com' && url.pathname.includes('/r/')) {
-      const subreddit = url.pathname.match(/\/r\/([^\/]+)/);
+      const subreddit = url.pathname.match(/r\/([^/]+)/);
       if (subreddit) {
         return `r/${subreddit[1]}`;
       }
@@ -36,7 +36,7 @@ const getSourceName = (feedUrl) => {
     
     // For Dev.to, check if it's a tag feed
     if (domain === 'dev.to' && url.pathname.includes('/tag/')) {
-      const tag = url.pathname.match(/\/tag\/([^\/]+)/);
+      const tag = url.pathname.match(/tag\/([^/]+)/);
       if (tag) {
         return `Dev.to (${tag[1]})`;
       }
