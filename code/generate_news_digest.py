@@ -8,7 +8,6 @@ import re
 import time
 import json
 import html
-from html.parser import HTMLParser
 
 # --- Load config ---
 config_path = Path(Path(__file__).parent, "config.yaml")
@@ -17,6 +16,7 @@ with open(config_path, "r") as f:
 
 feeds = config["feeds"]
 topics = config["topics"]
+max_processing_time = config.get("max_processing_time", 0)  # In seconds, 0 means unlimited
 
 # --- Initialize processing cache ---
 cache = SQLiteProcessingCache()
@@ -252,11 +252,17 @@ processed_count = 0
 cached_count = 0
 new_count = 0
 
+start_time = time.time()
+
 for url in feeds:
     feed = feedparser.parse(url)
     print(f"\nProcessing feed: {url}")
     
     for entry in feed.entries:
+        # Check time limit before processing each article
+        if max_processing_time and (time.time() - start_time) > max_processing_time:
+            print(f"\nMax processing time of {max_processing_time} seconds reached. Stopping early and saving progress.")
+            break
         processed_count += 1
         print(f"Processing entry {processed_count}: {entry.title}")
         
@@ -357,6 +363,10 @@ for url in feeds:
         # If article wasn't processed by any topic, still cache the negative result
         if not article_processed:
             cache.mark_article_processed(entry, {"topic": None, "processed": False})
+
+    # If time limit reached, stop processing further feeds
+    if max_processing_time and (time.time() - start_time) > max_processing_time:
+        break
 
 # Sort articles by date (newest first) within each topic
 def get_sort_key(article):

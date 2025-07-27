@@ -1,9 +1,9 @@
 name: Daily News Digest
 
-# Run daily at 8 AM UTC (adjust timezone as needed)
+# Run every 2 hours (adjust cron as needed)
 on:
   schedule:
-    - cron: '0 8 * * *'
+    - cron: '0 */2 * * *'  # Every 2 hours, on the hour (UTC)
   # Allow manual triggering
   workflow_dispatch:
   # Run on pushes to main branch
